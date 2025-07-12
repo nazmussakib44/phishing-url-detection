@@ -36,18 +36,6 @@ def extract_features(url):
 
     return list(features.values())
 
-
-# 2. Prepare Dataset
-# def load_dataset(phishing_file, legit_file):
-#     phishing = pd.read_csv(phishing_file)
-#     phishing['label'] = 1
-#     legit = pd.read_csv(legit_file)
-#     legit['label'] = 0
-
-#     df = pd.concat([phishing, legit], ignore_index=True)
-#     df = df.sample(frac=1).reset_index(drop=True)  # shuffle
-#     return df
-
 def load_dataset(phishing_file, legit_file):
     phishing = pd.read_csv(phishing_file)
     legit = pd.read_csv(legit_file)
@@ -64,25 +52,6 @@ def load_dataset(phishing_file, legit_file):
     df = pd.concat([phishing, legit], ignore_index=True)
     df = df.sample(frac=1, random_state=42).reset_index(drop=True)  # shuffle
     return df
-
-# 3. Feature Extraction on Dataset
-# def extract_features_from_df(df):
-#     features = []
-#     for url in df['url']:
-#         features.append(extract_features(url))
-#     return pd.DataFrame(features), df['label']
-
-# def extract_features_from_df(df):
-#     features = []
-#     labels = []
-#     for url, label in zip(df['url'], df['label']):
-#         try:
-#             feats = extract_features(url)
-#             features.append(feats)
-#             labels.append(label)
-#         except Exception as e:
-#             print(f"Skipping invalid URL: {url} — Reason: {e}")
-#     return pd.DataFrame(features), pd.Series(labels)
 
 def extract_features_from_df(df):
     features = []
@@ -120,15 +89,6 @@ def train_model(X, y):
     preds = model.predict(X_test)
     print("Model Evaluation:\n", classification_report(y_test, preds))
     print("Accuracy:", accuracy_score(y_test, preds))
-
-# 5. Predict from URL
-# def predict_url(url):
-#     model = joblib.load("model.pkl")
-#     features = extract_features(url)
-#     risk_score = model.predict_proba([features])[0][1]
-#     print(f"\nURL: {url}")
-#     print(f"Phishing Risk Score: {risk_score:.2f}")
-#     print("Prediction:", "Phishing ⚠️" if risk_score > 0.5 else "Legitimate ✅")
 
 def predict_url(url):
     if not os.path.exists("model.pkl"):
