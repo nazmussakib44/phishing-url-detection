@@ -8,8 +8,18 @@ from sklearn.metrics import classification_report
 from sklearn.metrics import accuracy_score
 
 # 1. Feature Extraction Function
+import re
+from urllib.parse import urlparse
+
 def extract_features(url):
     parsed = urlparse(url)
+    hostname = parsed.netloc.lower()
+    path = parsed.path.lower()
+
+    suspicious_keywords = ['login', 'verify', 'secure', 'account', 'update', 'signin', 'bank', 'webscr']
+    suspicious_tlds = ['.tk', '.ga', '.ml', '.cf', '.gq']
+    shortening_services = ['bit.ly', 'tinyurl.com', 'goo.gl', 'ow.ly', 't.co', 'is.gd']
+
     features = {
         "url_length": len(url),
         "num_dots": url.count('.'),
@@ -18,7 +28,12 @@ def extract_features(url):
         "has_ip": int(bool(re.search(r'http[s]?://\d{1,3}(\.\d{1,3}){3}', url))),
         "path_length": len(parsed.path),
         "has_https": int(parsed.scheme == "https"),
+        "num_subdomains": len(hostname.split('.')) - 2 if hostname.count('.') > 1 else 0,
+        "suspicious_tld": int(any(tld in hostname for tld in suspicious_tlds)),
+        "suspicious_keywords": sum(kw in url.lower() for kw in suspicious_keywords),
+        "is_shortened": int(any(short in hostname for short in shortening_services)),
     }
+
     return list(features.values())
 
 def load_dataset(phishing_file, legit_file):
@@ -50,11 +65,25 @@ def extract_features_from_df(df):
             print(f"[!] Skipping URL due to error: {url}\n    Reason: {e}")
     return pd.DataFrame(features), pd.Series(labels)
 
+
 # 4. Train and Save Model
 def train_model(X, y):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     model = LGBMClassifier()
-    model.fit(X_train, y_train)
+    # model.fit(X_train, y_train)
+    model.fit(X_train, y_train, feature_name=[
+        "url_length",
+        "num_dots",
+        "has_at",
+        "has_hyphen",
+        "has_ip",
+        "path_length",
+        "has_https",
+        "num_subdomains",
+        "suspicious_tld",
+        "suspicious_keywords",
+        "is_shortened"
+    ])
     joblib.dump(model, "model.pkl")
 
     preds = model.predict(X_test)
